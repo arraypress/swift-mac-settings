@@ -15,8 +15,8 @@ let package = Package(
     ],
     dependencies: [
         // Focus and the system toggles only Shortcuts can change, through
-        // helper shortcuts. Path during development; the URL at release.
-        .package(path: "../swift-apple-shortcuts"),
+        // helper shortcuts.
+        .package(url: "https://github.com/arraypress/swift-apple-shortcuts.git", from: "0.2.0"),
     ],
     targets: [
         // The catalogue is compiled in (Support/CatalogueData.swift), not a

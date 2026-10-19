@@ -1,6 +1,15 @@
 {
-  "originHash" : "bbdb8fd998328e0cf06f6241c11b7547b5516f2fee436beeb43593a1b2a31627",
+  "originHash" : "aff6acbec420e7b98807378b554367d0839b0cb25a2f62459c938c7302e23045",
   "pins" : [
+    {
+      "identity" : "swift-apple-shortcuts",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/arraypress/swift-apple-shortcuts.git",
+      "state" : {
+        "revision" : "b83b3a5bc5e5e044189dd614b96c83528702d06c",
+        "version" : "0.2.0"
+      }
+    },
     {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
