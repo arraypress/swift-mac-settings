@@ -13,11 +13,16 @@ let package = Package(
     products: [
         .library(name: "MacSettings", targets: ["MacSettings"]),
     ],
+    dependencies: [
+        // Focus and the system toggles only Shortcuts can change, through
+        // helper shortcuts. Path during development; the URL at release.
+        .package(path: "../swift-apple-shortcuts"),
+    ],
     targets: [
         // The catalogue is compiled in (Support/CatalogueData.swift), not a
         // resource bundle: a Homebrew-symlinked binary cannot find
         // Bundle.module, and a tool that cannot find its catalogue must not write.
-        .target(name: "MacSettings"),
+        .target(name: "MacSettings", dependencies: [.product(name: "AppleShortcuts", package: "swift-apple-shortcuts")]),
         .testTarget(name: "MacSettingsTests", dependencies: ["MacSettings"]),
     ]
 )

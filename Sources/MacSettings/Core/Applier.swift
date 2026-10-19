@@ -18,7 +18,9 @@ public enum Applier {
     ///
     /// - Throws: only when the journal cannot be written — and then before
     ///   anything is: a change that cannot be undone is not made.
-    public static func apply(_ plan: [PlanItem], context: SettingsContext,
+    /// - Parameter catalogue: Where a helper-written setting is looked up to
+    ///   read it back; the built-in one when `nil`.
+    public static func apply(_ plan: [PlanItem], context: SettingsContext, catalogue: Catalogue? = nil,
                              batch: String = JournalStore.newBatch()) throws(SettingsError) -> [Outcome] {
         var outcomes: [Outcome] = []
         for item in plan {
@@ -26,7 +28,9 @@ public enum Applier {
             case .unchanged: outcomes.append(Outcome(item: item, result: .unchanged))
             case .skipped: outcomes.append(Outcome(item: item, result: .skipped, reason: item.reason))
             case .change:
-                if let app = item.app {
+                if let control = item.control {
+                    outcomes.append(try applyControl(item, control, catalogue: catalogue, context: context, batch: batch))
+                } else if let app = item.app {
                     outcomes.append(try applyApp(item, app, context: context, batch: batch))
                 } else {
                     outcomes.append(try applyWrites(item, context: context, batch: batch))
@@ -55,6 +59,17 @@ public enum Applier {
         }
         return Outcome(item: item, result: problems.isEmpty ? .applied : .failed,
                        reason: problems.isEmpty ? nil : problems.joined(separator: "; "), batch: batch)
+    }
+
+    /// Runs the helper, then reads the setting back until it shows the
+    /// target. The journal entry is written first, as for a preference.
+    private static func applyControl(_ item: PlanItem, _ planned: PlannedControl, catalogue: Catalogue?, context: SettingsContext,
+                                     batch: String) throws(SettingsError) -> Outcome {
+        let entry = JournalEntry(id: "\(batch)-\(item.id)-0", batch: batch, setting: item.id, at: Date(), control: planned.control,
+                                 valueBefore: planned.before, valueAfter: planned.after)
+        try JournalStore.append([entry], to: context.journal)
+        let (landed, reason) = ControlRun.set(planned.control, to: planned.after, settingID: item.id, catalogue: catalogue, context: context)
+        return Outcome(item: item, result: landed ? .applied : .failed, reason: reason, batch: batch)
     }
 
     private static func applyApp(_ item: PlanItem, _ app: PlannedApp, context: SettingsContext, batch: String) throws(SettingsError) -> Outcome {

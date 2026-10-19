@@ -25,12 +25,17 @@ public struct JournalEntry: Codable, Equatable, Sendable {
     public let target: String?
     public let appBefore: String?
     public let appAfter: String?
+    /// A helper-shortcut change: the control, and the values before and after.
+    public let control: Control?
+    public let valueBefore: SettingValue?
+    public let valueAfter: SettingValue?
     /// Set once `undo` has put it back.
     public var restoredAt: Date?
 
     public init(id: String, batch: String, setting: String, at: Date, place: Place? = nil, before: StoredValue? = nil,
                 after: StoredValue? = nil, kind: AppTargetKind? = nil, target: String? = nil, appBefore: String? = nil,
-                appAfter: String? = nil, restoredAt: Date? = nil) {
+                appAfter: String? = nil, control: Control? = nil, valueBefore: SettingValue? = nil,
+                valueAfter: SettingValue? = nil, restoredAt: Date? = nil) {
         self.id = id
         self.batch = batch
         self.setting = setting
@@ -42,6 +47,9 @@ public struct JournalEntry: Codable, Equatable, Sendable {
         self.target = target
         self.appBefore = appBefore
         self.appAfter = appAfter
+        self.control = control
+        self.valueBefore = valueBefore
+        self.valueAfter = valueAfter
         self.restoredAt = restoredAt
     }
 }

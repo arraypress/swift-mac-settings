@@ -21,9 +21,15 @@ public struct SettingsContext: Sendable {
     public var allowUnverified: Bool
     /// How long to wait for macOS to answer a default-app change.
     public var appTimeout: Double
+    /// The settings only Shortcuts can change.
+    public var controls: any SystemControls
+    /// Read-backs after a helper write, and the pause between them.
+    public var controlAttempts = 20
+    public var controlInterval: TimeInterval = 0.25
 
     public init(store: any PreferenceStore, apps: any AppStore, managed: ManagedPreferences, journal: URL,
-                system: SystemVersion, allowUnverified: Bool = false, appTimeout: Double = 30) {
+                system: SystemVersion, allowUnverified: Bool = false, appTimeout: Double = 30,
+                controls: any SystemControls = LiveSystemControls()) {
         self.store = store
         self.apps = apps
         self.managed = managed
@@ -31,6 +37,7 @@ public struct SettingsContext: Sendable {
         self.system = system
         self.allowUnverified = allowUnverified
         self.appTimeout = appTimeout
+        self.controls = controls
     }
 
     /// This Mac, this user.

@@ -86,6 +86,7 @@ public enum Planner {
         if current.locked {
             return skipped(setting, .locked, "set by a configuration profile (MDM or Screen Time)", to: toText, context: context)
         }
+        if let control = setting.control, control.helper != nil { return plan(setting, control: control, to: target, current: current, context: context) }
         let after: StoredValue = target.map { Values.stored($0, for: setting) } ?? .absent
         let writes = setting.places.map { PlannedWrite(place: $0, before: context.store.read($0), after: after) }
         let unchanged: Bool
@@ -99,6 +100,25 @@ public enum Planner {
         }
         return PlanItem(id: setting.id, label: setting.label, status: unchanged ? .unchanged : .change,
                         from: current.display, to: toText, writes: unchanged ? [] : writes, restart: setting.restart)
+    }
+
+    /// A setting only a helper shortcut can change. Refused when this Mac
+    /// cannot read it back — a write nobody can check is not made.
+    static func plan(_ setting: Setting, control: Control, to target: SettingValue?, current: Reading,
+                     context: SettingsContext) -> PlanItem {
+        guard let wanted = target ?? setting.defaultValue else {
+            return skipped(setting, .invalidValue, "has no known default for Shortcuts to set", to: "default", context: context)
+        }
+        let toText = setting.display(wanted)
+        guard let before = current.value else {
+            return skipped(setting, .notWritable, "cannot be read back on this Mac (\(current.unreadable ?? "no value")), so it is not written",
+                           to: toText, context: context)
+        }
+        if Values.same(before, wanted) {
+            return PlanItem(id: setting.id, label: setting.label, status: .unchanged, from: current.display, to: toText, restart: setting.restart)
+        }
+        return PlanItem(id: setting.id, label: setting.label, status: .change, from: current.display, to: toText, restart: setting.restart,
+                        control: PlannedControl(control: control, before: before, after: wanted))
     }
 
     /// One default app to `bundleID`.

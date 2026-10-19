@@ -22,13 +22,15 @@ public struct PlanItem: Codable, Equatable, Sendable {
     public let writes: [PlannedWrite]
     /// The LaunchServices change, for a default app.
     public let app: PlannedApp?
+    /// The helper-shortcut change, for a setting only Shortcuts can change.
+    public let control: PlannedControl?
     public let restart: [Restart]
     /// The System Settings URL to change it by hand, when it is skipped.
     public let paneURL: String?
 
     public init(id: String, label: String, status: PlanStatus, skip: SkipKind? = nil, reason: String? = nil,
                 from: String, to: String, writes: [PlannedWrite] = [], app: PlannedApp? = nil,
-                restart: [Restart] = [], paneURL: String? = nil) {
+                restart: [Restart] = [], paneURL: String? = nil, control: PlannedControl? = nil) {
         self.id = id
         self.label = label
         self.status = status
@@ -38,6 +40,7 @@ public struct PlanItem: Codable, Equatable, Sendable {
         self.to = to
         self.writes = writes
         self.app = app
+        self.control = control
         self.restart = restart
         self.paneURL = paneURL
     }

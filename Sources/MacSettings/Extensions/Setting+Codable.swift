@@ -14,7 +14,7 @@ extension Setting: Codable {
         case defaultValue = "default"
         case restart, pane
         case location = "where"
-        case note, mirrors, writable, readOnlyReason, verified
+        case note, mirrors, writable, readOnlyReason, verified, control
     }
 
     public init(from decoder: any Decoder) throws {
@@ -42,7 +42,8 @@ extension Setting: Codable {
             mirrors: try c.decodeIfPresent([Place].self, forKey: .mirrors) ?? [],
             writable: try c.decodeIfPresent(Bool.self, forKey: .writable) ?? true,
             readOnlyReason: try c.decodeIfPresent(String.self, forKey: .readOnlyReason),
-            verified: try c.decode([String].self, forKey: .verified)
+            verified: try c.decode([String].self, forKey: .verified),
+            control: try c.decodeIfPresent(Control.self, forKey: .control)
         )
     }
 
@@ -68,5 +69,6 @@ extension Setting: Codable {
         try c.encode(writable, forKey: .writable)
         try c.encodeIfPresent(readOnlyReason, forKey: .readOnlyReason)
         try c.encode(verified, forKey: .verified)
+        try c.encodeIfPresent(control, forKey: .control)
     }
 }

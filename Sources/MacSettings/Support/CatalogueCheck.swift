@@ -11,6 +11,7 @@
 //  catalogue edit can put FileVault or a password key within reach.
 //
 
+import AppleShortcuts
 import Foundation
 
 enum CatalogueCheck {
@@ -33,7 +34,9 @@ enum CatalogueCheck {
 
     /// A System Settings pane: an extension id that opens with
     /// `x-apple.systempreferences:<id>`.
-    static var panePattern: Regex<Substring> { /com\.apple\.[A-Za-z0-9-]+-Settings\.extension/ }
+    /// A pane's extension id. Bluetooth's alone breaks the pattern (measured:
+    /// Bluetooth.appex is `com.apple.BluetoothSettings`).
+    static var panePattern: Regex<Substring> { /com\.apple\.[A-Za-z0-9-]+-Settings\.extension|com\.apple\.BluetoothSettings/ }
 
     /// Whether a place is out of bounds whatever a catalogue says.
     static func isForbidden(_ place: Place) -> Bool {
@@ -79,6 +82,7 @@ enum CatalogueCheck {
             }
             if let pane = setting.pane, pane.wholeMatch(of: panePattern) == nil { problems.append("\(label): \(pane) is not a settings pane id") }
             if Set(setting.restart).count != setting.restart.count { problems.append("\(label): restart repeats itself") }
+            problems += controlProblems(setting, label: label)
         }
         for app in catalogue.defaultApps {
             let label = "default app \(app.id)"
@@ -96,6 +100,47 @@ enum CatalogueCheck {
         }
         return problems
     }
+
+    /// A helper-written setting names a real helper, a field that helper
+    /// reads, and a reader that exists — and only it uses the `(macOS)` domain.
+    static func controlProblems(_ setting: Setting, label: String) -> [String] {
+        guard let control = setting.control else {
+            return setting.domain == liveDomain ? ["\(label): the \(liveDomain) domain is for settings with a reader"] : []
+        }
+        var problems: [String] = []
+        let helpers = (try? HelperCatalogue.builtIn()) ?? HelperCatalogue(helpers: [])
+        if control.helper == nil {
+            if setting.writable { problems.append("\(label): a setting with no helper is read-only") }
+        } else if let helper = helpers.helper(control.helper!) {
+            let fields = Set(helper.input.map(\.name))
+            for key in control.keys.values.sorted() where !fields.contains(key) {
+                problems.append("\(label): \(helper.id) takes no \(key)")
+            }
+            if let field = control.field, !fields.contains(field) { problems.append("\(label): \(helper.id) takes no \(field)") }
+            if control.keys.isEmpty == (control.field == nil) { problems.append("\(label): a control has keys or a field, not both or neither") }
+            if setting.type == .bool, !control.keys.isEmpty, Set(control.keys.keys) != ["on", "off"] {
+                problems.append("\(label): a switch's keys are on and off")
+            }
+            for choice in setting.choices where !control.keys.isEmpty {
+                if case .string(let value) = choice.value, control.keys[value] == nil { problems.append("\(label): no key for \(value)") }
+            }
+        } else {
+            problems.append("\(label): no helper \(control.helper!)")
+        }
+        if let probe = control.probe {
+            if !SystemProbes.names.contains(probe) { problems.append("\(label): no reader \(probe)") }
+            if setting.domain != liveDomain || setting.key != probe {
+                problems.append("\(label): a setting with a reader is \(liveDomain) / \(probe)")
+            }
+        } else if setting.domain == liveDomain {
+            problems.append("\(label): \(liveDomain) needs a reader")
+        }
+        if !setting.writable, control.helper != nil { problems.append("\(label): a setting with a helper is writable") }
+        return problems
+    }
+
+    /// The pseudo-domain of settings read from the OS rather than a preference.
+    static let liveDomain = "(macOS)"
 
     private static func idProblems(_ id: String, group: String, label: String, seen: inout Set<String>) -> [String] {
         var problems: [String] = []

@@ -38,12 +38,14 @@ public struct Setting: Equatable, Hashable, Sendable {
     public let readOnlyReason: String?
     /// macOS major versions it was probed on.
     public let verified: [String]
+    /// Changed through a helper shortcut rather than cfprefsd, when set.
+    public let control: Control?
 
     public init(id: String, label: String, group: String, domain: String, key: String, host: HostScope = .any,
                 type: SettingType, storage: SettingType? = nil, choices: [Choice] = [], min: Double? = nil,
                 max: Double? = nil, defaultValue: SettingValue? = nil, restart: [Restart] = [], pane: String? = nil,
                 location: String? = nil, note: String? = nil, mirrors: [Place] = [], writable: Bool = true,
-                readOnlyReason: String? = nil, verified: [String]) {
+                readOnlyReason: String? = nil, verified: [String], control: Control? = nil) {
         self.id = id
         self.label = label
         self.group = group
@@ -64,5 +66,6 @@ public struct Setting: Equatable, Hashable, Sendable {
         self.writable = writable
         self.readOnlyReason = readOnlyReason
         self.verified = verified
+        self.control = control
     }
 }

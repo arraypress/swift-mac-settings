@@ -31,6 +31,11 @@ public enum SettingsError: Error, Equatable, Sendable {
     case journalEntryNotFound(String)
     /// The journal could not be read or written.
     case journal(String)
+    /// A change made through a helper shortcut that the read-back does not
+    /// show. `changed`: whether anything moved at all.
+    case notConfirmed(id: String, expected: String, found: String, changed: Bool, reason: String?)
+    /// A helper shortcut is missing, out of date or failed before doing anything.
+    case helper(id: String, reason: String, remedy: String?)
 }
 
 extension SettingsError: LocalizedError {
@@ -48,6 +53,10 @@ extension SettingsError: LocalizedError {
         case .invalidSnapshot(let reason): "not a settings snapshot: \(reason)"
         case .journalEntryNotFound(let id): "nothing in the undo journal is called \(id)"
         case .journal(let reason): "the undo journal: \(reason)"
+        case .notConfirmed(let id, let expected, let found, let changed, let reason):
+            "\(id): expected \(expected), but it reads back as \(found)" + (changed ? "" : " — nothing changed")
+                + (reason.map { ". \($0)" } ?? "")
+        case .helper(_, let reason, _): reason
         }
     }
 }

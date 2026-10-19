@@ -29,6 +29,7 @@ public enum Reader {
 
     /// One setting: the stored value, or the default when nothing is stored.
     public static func read(_ setting: Setting, context: SettingsContext) -> Reading {
+        if let probe = setting.control?.probe { return read(setting, probe: probe, context: context) }
         let stored = context.store.read(setting.place)
         let isSet = stored != .absent
         let logical = Values.logical(stored, for: setting)
@@ -40,6 +41,20 @@ public enum Reader {
                        display: unreadable.map { "unreadable: \($0)" } ?? setting.display(value), set: isSet,
                        changed: changed, locked: locked, writable: setting.writable,
                        verified: setting.isVerified(on: context.system), unreadable: unreadable)
+    }
+
+    /// A setting with no preference key: the OS reader's answer.
+    static func read(_ setting: Setting, probe: String, context: SettingsContext) -> Reading {
+        let verified = setting.isVerified(on: context.system)
+        switch context.controls.read(probe: probe) {
+        case .value(let value):
+            let changed = setting.defaultValue.map { !Values.same(value, $0) } ?? true
+            return Reading(id: setting.id, label: setting.label, group: setting.group, value: value, display: setting.display(value),
+                           set: true, changed: changed, locked: false, writable: setting.writable, verified: verified)
+        case .unavailable(let reason):
+            return Reading(id: setting.id, label: setting.label, group: setting.group, value: nil, display: "unavailable: \(reason)",
+                           set: false, changed: false, locked: false, writable: setting.writable, verified: verified, unreadable: reason)
+        }
     }
 
     /// One default app: the app that opens its first target (all of them, when they differ).
